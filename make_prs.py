@@ -22,7 +22,7 @@ def make_request(_url, _user, _data=None, _type='GET', _headers={}):
     return response
 
 
-def make_pr(title, body, head, base, user):
+def make_pr(title, body, head, base, user, date):
     # Create a PR on github.com using the given parameters
 
     realuser = get_github_username(user)
@@ -30,6 +30,8 @@ def make_pr(title, body, head, base, user):
     orig_pr_num = head.split('/')[2]
 
     body = '*Original PR: https://charm.cs.illinois.edu/gerrit/{0}'.format(orig_pr_num) + "*\n\n---\n" + body
+
+    body = '*Original date: {0}*\n'.format(date) + body
 
     if not gerrit_user_has_token(user):
         if gerrit_user_has_github_name(user):
@@ -122,7 +124,7 @@ def list_branches():
 
     return res
 
-def branch_last_commit_msg(branch):
+def get_branch_data(branch):
     response = make_request('/git/refs/heads/{0}'.format(branch), github_default_username)
 
     data = json.loads(response.text)
@@ -136,10 +138,12 @@ def branch_last_commit_msg(branch):
     author = data['committer']['name']
     text = data['message'].splitlines()
 
+    date = data['committer']['date'].replace("T", " ").replace("Z", "")
+
     title = text[0]
     body = '\n'.join(text[1:])
 
-    return(author, title, body)
+    return(author, title, body, date)
 
 
 print('=' * 80)
@@ -151,8 +155,8 @@ print('Creating {0} pull requests in GitHub repository "{1}".'.format(len(branch
 print('=' * 80)
 
 for b in branches:
-    author, title, body = branch_last_commit_msg(b)
-    make_pr(title, body, b, 'charm', author)
+    author, title, body, date = get_branch_data(b)
+    make_pr(title, body, b, 'charm', author, date)
 
 print('=' * 80)
 print('Finished.')
