@@ -7,10 +7,10 @@
 # GitHub API information
 #
 
-# The GitHub repository to add this issue to:
+# The GitHub repository to add the Pull Request to:
 GITHUB_REPO = 'github_repo'
 
-# Issues and comments will be assigned to this GitHub user if the real user is not
+# Pull requests will be created by this GitHub user if the real user is not
 # in the map below
 github_default_username = 'github_default_username'
 

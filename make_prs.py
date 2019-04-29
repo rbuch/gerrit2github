@@ -154,9 +154,9 @@ branches = list_branches()
 print('Creating {0} pull requests in GitHub repository "{1}".'.format(len(branches), GITHUB_REPO))
 print('=' * 80)
 
-for b in branches:
-    author, title, body, date = get_branch_data(b)
-    make_pr(title, body, b, 'charm', author, date)
+for branch in branches:
+    author, title, body, date = get_branch_data(branch)
+    make_pr(title, body, branch, 'master', author, date)
 
 print('=' * 80)
 print('Finished.')
