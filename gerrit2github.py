@@ -43,19 +43,25 @@ def parseGerritChangesJSON(data):
                 sys.exit(-1)
     return changes
 
-project_name = "charm"
+if len(sys.argv) < 2:
+    print "Must specify project name"
+    sys.exit(1)
+
+project_name = sys.argv[1]
+
 
 query = "project:%s status:open" % project_name
 (returnValue, output) = run_command_status("ssh", "-x", "charmgit", 
                                                "gerrit", "query",
                                                "--format=JSON %s" % query)
 changes = parseGerritChangesJSON(output)
+print project_name, len(changes), "changes"
 
 # Fetch the change requests from Gerrit and push them to Github
 for change in changes:
     author = re.sub('\W+', '_', change['owner']['name']).lower()
     branchName = "review/%s/%s" % (author, change['number'])
-    (returnValue, output) = run_command_status("ssh", "-x", "charmgit", 
+    (returnValue, output) = run_command_status("ssh", "-x", "charmgit",
                                                    "gerrit", "query",
                                                    "--format=JSON", "--current-patch-set",
                                                    "change:%s" % change['number'])
