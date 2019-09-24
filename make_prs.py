@@ -124,6 +124,14 @@ def list_branches():
 
     return res
 
+def get_default_branch():
+    response = make_request("", github_default_username)
+
+    data = json.loads(response.text)
+
+    return data['default_branch']
+
+
 def get_branch_data(branch):
     response = make_request('/git/refs/heads/{0}'.format(branch), github_default_username)
 
@@ -151,12 +159,14 @@ print('=' * 80)
 branches = list_branches()
 # branches = [ "review/yan_ming_li/761" ]
 
-print('Creating {0} pull requests in GitHub repository "{1}".'.format(len(branches), GITHUB_REPO))
+def_branch = get_default_branch()
+
+print('Creating {0} pull requests in GitHub repository "{1}". Base branch: "{2}"'.format(len(branches), GITHUB_REPO, def_branch))
 print('=' * 80)
 
 for branch in branches:
     author, title, body, date = get_branch_data(branch)
-    make_pr(title, body, branch, 'master', author, date)
+    make_pr(title, body, branch, def_branch, author, date)
 
 print('=' * 80)
 print('Finished.')
