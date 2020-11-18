@@ -9,6 +9,7 @@ import os
 import subprocess
 import json
 import re
+import unidecode
 
 def run_command_status(*argv, **kwargs):
     if len(argv) == 1:
@@ -59,7 +60,7 @@ print project_name, len(changes), "changes"
 
 # Fetch the change requests from Gerrit and push them to Github
 for change in changes:
-    author = re.sub('\W+', '_', change['owner']['name']).lower()
+    author = re.sub('\W+', '_', unidecode.unidecode(change['owner']['name'])).lower()
     branchName = "review/%s/%s" % (author, change['number'])
     (returnValue, output) = run_command_status("ssh", "-x", "charmgit",
                                                    "gerrit", "query",
