@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 # Gerrit is assumed to be accessible via the charmgit ssh alias and be set as the "origin" remote
-# Github is assumed to be set as the "github" remote
+# Gitlab is assumed to be set as the "gitlab" remote
 # Should be run somewhere inside the project folder (so the git commands work)
 
 import sys
@@ -58,7 +58,7 @@ query = "project:%s status:open" % project_name
 changes = parseGerritChangesJSON(output)
 print project_name, len(changes), "changes"
 
-# Fetch the change requests from Gerrit and push them to Github
+# Fetch the change requests from Gerrit and push them to Gitlab
 for change in changes:
     author = re.sub('\W+', '_', unidecode.unidecode(change['owner']['name'])).lower()
     branchName = "review/%s/%s" % (author, change['number'])
@@ -70,4 +70,4 @@ for change in changes:
     print branchName, changeInfo[0]["currentPatchSet"]["ref"]
     run_command_status("git", "fetch", "origin", changeInfo[0]["currentPatchSet"]["ref"])
     run_command_status("git", "checkout", "-b", branchName, "FETCH_HEAD")
-    run_command_status("git", "push", "github", branchName)
+    run_command_status("git", "push", "gitlab", branchName)
