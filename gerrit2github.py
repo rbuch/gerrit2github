@@ -67,7 +67,42 @@ for change in changes:
                                                    "--format=JSON", "--current-patch-set",
                                                    "change:%s" % change['number'])
     changeInfo = parseGerritChangesJSON(output)
+    change['gitlab_branch'] = branchName
     print branchName, changeInfo[0]["currentPatchSet"]["ref"]
     run_command_status("git", "fetch", "origin", changeInfo[0]["currentPatchSet"]["ref"])
     run_command_status("git", "checkout", "-b", branchName, "FETCH_HEAD")
     run_command_status("git", "push", "gitlab", branchName)
+
+from make_prs import *
+    
+print('=' * 80)
+
+branches = list_branches()
+# branches = [ "review/yan_ming_li/761" ]
+
+def_branch = get_default_branch()
+
+print('Creating {0} pull requests in GitHub repository "{1}". Base branch: "{2}"'.format(len(branches), GITHUB_REPO, def_branch))
+print('=' * 80)
+
+# for branch in branches:
+#     author, title, body, date = get_branch_data(branch)
+#     print author, title, body, date
+#     make_pr(title, body, branch, def_branch, author, date)
+
+for change in changes:
+    author, title, body, date, target = get_change_data(change)
+    print author, title, body, date, target, change['gitlab_branch']
+    branch = change['gitlab_branch']
+    make_pr(title, body, branch, target, author, date)
+
+print('=' * 80)
+print('Finished.')
+
+if len(unknown_github_username) > 0:
+    print('The following Gerrit users did not have a GitHub username associated with them:')
+    print(unknown_github_username)
+
+if len(unknown_github_token) > 0:
+    print('The following GitHub users did not have a GitHub token associated with them:')
+    print(unknown_github_token)

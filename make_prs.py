@@ -12,10 +12,11 @@ import config
 
 
 def make_request(_url, _user, _data=None, _type='GET', _headers={}):
-    _headers['Authorization'] = 'token {0}'.format(get_github_token(_user))
+    _headers['PRIVATE-TOKEN'] = '{0}'.format(get_github_token(_user))
+    _headers['Content-Type'] = 'application/json'
 
-    url = 'https://api.github.com/repos/{0}'.format(GITHUB_REPO) + _url
-
+    url = 'https://gitlab.com/api/v4/projects/{0}'.format(GITHUB_REPO) + _url
+    print url, _headers, _data
     time.sleep(2)
     response = requests.request(_type, url, data=_data, headers=_headers)
 
@@ -41,15 +42,15 @@ def make_pr(title, body, head, base, user, date):
 
 
     data = {'title': title,
-            'body': body,
-            'head': head,
-            'base': base,
-            'maintainer_can_modify': True,
+            'description': body,
+            'source_branch': head,
+            'target_branch': base,
+            'allow_collaboration': True,
            }
 
     payload = json.dumps(data)
 
-    response = make_request('/pulls', realuser, _data=payload, _type="POST")
+    response = make_request('/merge_requests', realuser, _data=payload, _type="POST")
 
     if response.status_code != 201:
         print('Could not create pull request: title:"{0}", user: {1}, realuser: {2}, payload: {3}'.format(title,user,realuser,payload))
@@ -57,12 +58,12 @@ def make_pr(title, body, head, base, user, date):
         sys.exit(1)
     else:
         data = json.loads(response.text)
-        myurl = data['html_url']
+        myurl = data['web_url']
 
         if "X-RateLimit-Remaining" in response.headers: 
-            print('  PR: "{0}" {1} ({2})'.format(title.split('\n')[0][:40], myurl, response.headers["X-RateLimit-Remaining"]))
+            print('  PR: "{0}" {1} ({2})'.format(title, myurl, response.headers["X-RateLimit-Remaining"]))
         else:
-            print('  PR: "{0}" {1}'.format(title.split('\n')[0][:40]), myurl)
+            print('  PR: "{0}" {1}'.format(title, myurl))
 
 
 def gerrit_user_has_token(gerrit_user):
@@ -85,7 +86,7 @@ def get_github_username(gerrit_user):
         return(github_usermap[gerrit_user])
     else:
         if gerrit_user not in unknown_github_username:
-            print('  Gerrit user "{0}" not in github_usermap, using default GitHub user "{1}".'.format(gerrit_user, github_default_username))
+            print(u'  Gerrit user "{0}" not in github_usermap, using default GitHub user "{1}".'.format(gerrit_user, github_default_username))
             unknown_github_username.add(gerrit_user)
         return(github_default_username)
 
@@ -95,14 +96,14 @@ def get_github_token(github_user):
         return(github_tokenmap[github_user])
     else:
         if github_user not in unknown_github_token:
-            print('  GitHub user "{0}" not in github_tokenmap, using token for default GitHub user "{1}".'.format(github_user, github_default_username))
+            print(u'  GitHub user "{0}" not in github_tokenmap, using token for default GitHub user "{1}".'.format(github_user, github_default_username))
             unknown_github_token.add(github_user)
         return(github_tokenmap[github_default_username])
 
 
 def list_branches():
     res = []
-    response = make_request('/branches?per_page=100', github_default_username)
+    response = make_request('/repository/branches?per_page=100', github_default_username)
 
     data = json.loads(response.text)
 
@@ -125,11 +126,7 @@ def list_branches():
     return res
 
 def get_default_branch():
-    response = make_request("", github_default_username)
-
-    data = json.loads(response.text)
-
-    return data['default_branch']
+    return 'master'
 
 
 def get_branch_data(branch):
@@ -154,27 +151,35 @@ def get_branch_data(branch):
     return(author, title, body, date)
 
 
-print('=' * 80)
+def get_change_data(change):
+    author = change['owner']['name']
+    title = change['subject']
+    body = change['commitMessage']
+    date = time.ctime(change['createdOn'])
+    target = change['branch']
+    return(author, title, body, date, target)
 
-branches = list_branches()
-# branches = [ "review/yan_ming_li/761" ]
+# print('=' * 80)
 
-def_branch = get_default_branch()
+# branches = list_branches()
+# # branches = [ "review/yan_ming_li/761" ]
 
-print('Creating {0} pull requests in GitHub repository "{1}". Base branch: "{2}"'.format(len(branches), GITHUB_REPO, def_branch))
-print('=' * 80)
+# def_branch = get_default_branch()
 
-for branch in branches:
-    author, title, body, date = get_branch_data(branch)
-    make_pr(title, body, branch, def_branch, author, date)
+# print('Creating {0} pull requests in GitHub repository "{1}". Base branch: "{2}"'.format(len(branches), GITHUB_REPO, def_branch))
+# print('=' * 80)
 
-print('=' * 80)
-print('Finished.')
+# for branch in branches:
+#     author, title, body, date = get_branch_data(branch)
+#     make_pr(title, body, branch, def_branch, author, date)
 
-if len(unknown_github_username) > 0:
-    print('The following Gerrit users did not have a GitHub username associated with them:')
-    print(unknown_github_username)
+# print('=' * 80)
+# print('Finished.')
 
-if len(unknown_github_token) > 0:
-    print('The following GitHub users did not have a GitHub token associated with them:')
-    print(unknown_github_token)
+# if len(unknown_github_username) > 0:
+#     print('The following Gerrit users did not have a GitHub username associated with them:')
+#     print(unknown_github_username)
+
+# if len(unknown_github_token) > 0:
+#     print('The following GitHub users did not have a GitHub token associated with them:')
+#     print(unknown_github_token)
